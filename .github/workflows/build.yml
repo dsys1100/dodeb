@@ -1,0 +1,57 @@
+name: Build Dodeb
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 0 1 * *'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup
+        id: setup
+        run: sudo apt update && sudo apt install xorriso cpio gzip p7zip-full fakeroot binutils isolinux -y
+        shell: bash
+
+      - name: Build
+        id: build
+        run: chmod +x build.sh && ./build.sh
+        shell: bash
+
+      - name: Create Release Info
+        id: rel
+        run: |
+          echo "real" > release_body.txt
+        shell: bash
+
+      - name: Create Git Tag and Release with unique name
+        id: vars
+        run: |
+          echo "tag_name=Dodeb-$(date +'%Y%m%d-%H%M%S'-UTC)" >> "$GITHUB_OUTPUT"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag ${{ steps.vars.outputs.tag_name }}
+          git push origin ${{ steps.vars.outputs.tag_name }}
+        shell: bash
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dodeb.iso
+          tag_name: ${{ steps.vars.outputs.tag_name }}
+          name: ${{ steps.vars.outputs.tag_name }}
+          draft: false
+          prerelease: false
+          body_path: release_body.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
