@@ -70,11 +70,6 @@ d-i mirror/http/proxy seen false
 
 ### APT / packages
 
-d-i apt-setup/contrib boolean false
-d-i apt-setup/non-free boolean false
-d-i apt-setup/non-free-firmware boolean false
-d-i apt-setup/cdrom/set-first boolean false
-
 d-i base-installer/install-recommends boolean false
 d-i pkgsel/install-language-support boolean false
 
@@ -102,6 +97,9 @@ d-i time/zone string UTC
 ### Late command
 
 d-i preseed/late_command string \
+in-target rm -f /etc/apt/sources.list; \
+in-target rm -f /etc/apt/sources.list.d/*; \
+in-target sh -c 'printf "Types: deb\nURIs: http://deb.debian.org/debian\nSuites: stable stable-updates\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\n\nTypes: deb\nURIs: http://security.debian.org/debian-security\nSuites: stable-security\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\n" > /etc/apt/sources.list.d/debian.sources'; \
 in-target apt-get update; \
 in-target apt-get install -y --no-install-recommends docker.io docker-cli docker-compose; \
 in-target systemctl enable docker || true; \
